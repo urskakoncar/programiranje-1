@@ -36,6 +36,16 @@ vecaj:
 
 Zapišite program, ki na sklad zaporedno postavlja števila od 13 do 42.
 
+MOV A,13;
+MOV B,43;
+CALL povecaj;
+
+povecaj: PUSH A;
+	ADD A,1;
+	CMP A,B;
+	JNE povecaj;
+
+
 ## Iskanje najmanjšega števila v seznamu
 
 Zapišite program, ki poišče najmanjše število v danem seznamu. Seznam naj bo podan na začetku pomnilnika in sicer tako, da je na prvih dveh bajtih ukaz za skok na začetek programa, v tretjem bajtu dolžina seznama, v naslednjih bajtih zaporedoma elementi seznama, takoj za njimi pa bajt, v katerega naj se zapiše najmanjše število.
