@@ -6,6 +6,32 @@ Pri vseh nalogah se vam pod razdelkom **RAM** splača nastaviti _View_ na _Decim
 
 Zapišite program, ki v register `A` zapiše ostanek pri deljenju registra `A` z registrom `B`.
 
+
+MOV A,50;
+MOV B,20;
+MOV C,B;
+CALL odstej;
+CALL vecaj;
+
+odstej:
+	PUSH A
+	SUB A,B;
+	POP A
+	JAE vecaj;
+	JNAE koncaj;
+	
+
+koncaj: SUB B,A
+	SUB C,B;
+	MOV A,C
+	HLT
+vecaj:
+	
+	ADD B,C;
+	JAE odstej;
+	JMP koncaj;
+	
+
 ## Zaporedna števila
 
 Zapišite program, ki na sklad zaporedno postavlja števila od 13 do 42.
