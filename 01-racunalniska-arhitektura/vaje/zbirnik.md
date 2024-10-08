@@ -67,6 +67,53 @@ Zapišite program, ki poišče najmanjše število v danem seznamu. Seznam naj b
     main:
         ...
 
+
+
+    JMP main
+    dolzina:
+        DB 10    ; število elementov v seznamu
+    seznam:
+        DB 50    ; seznam
+        DB 56
+        DB 60
+        DB 46
+        DB 44
+        DB 58
+        DB 42
+        DB 52
+        DB 48
+        DB 54
+    minimum:
+        DB 0    ; na koncu bo tu minimum
+    zamenjaj: MOV D, B
+    	CMP C, 12
+    	JE minimum;
+    	JMP pomozna
+    
+    pomozna: INC C
+    	MOV B, [C] ; shranjevanje novih elementov
+    	PUSH B
+    	SUB B, D
+    	POP B
+    	JBE zamenjaj
+    	CMP C, 12
+    	JE minimum;
+    	JMP pomozna;
+    
+    
+    main: MOV C, 3
+    	MOV D, [C] ; na d bo shranjeval min elemente
+    	MOV B, D
+    	JMP pomozna
+    
+
+
+	
+
+
+	
+	
+
 ## Indeks najmanjšega števila v seznamu
 
 Zapišite funkcijo `poisci_minimum`, ki v register `B` shrani indeks najmanjšega števila v rezini `[A:C]` torej med števili, ki se nahajajo od vključno naslova, shranjenega v `A`, do naslova pred tistim, shranjenim v `C`. Funkcija naj z izjemo registra `B` vrednosti ostalih registrov pusti nespremenjene. Če funkcija deluje pravilno, bi moral spodnji program delovati kot tisti iz prejšnje naloge:
