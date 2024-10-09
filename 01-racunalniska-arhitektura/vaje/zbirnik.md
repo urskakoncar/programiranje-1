@@ -69,6 +69,8 @@ Zapišite program, ki poišče najmanjše število v danem seznamu. Seznam naj b
 
 
 
+prvi poskus: 
+
     JMP main
     dolzina:
         DB 10    ; število elementov v seznamu
@@ -108,7 +110,7 @@ Zapišite program, ki poišče najmanjše število v danem seznamu. Seznam naj b
     
 
 
-
+lepsa resitev:
 
     JMP main
     dolzina:
@@ -126,13 +128,13 @@ Zapišite program, ki poišče najmanjše število v danem seznamu. Seznam naj b
         DB 54
     minimum:
         DB 0    ; na koncu bo tu minimum
-    
-    
+
+
     zamenjaj: MOV D, B
     	CMP C, A
     	JNE pomozna;
     	RET
-    
+
     pomozna: INC C
     	MOV B, [C] ; shranjevanje novih elementov
     	PUSH B
@@ -142,8 +144,8 @@ Zapišite program, ki poišče najmanjše število v danem seznamu. Seznam naj b
     	CMP C, A
     	JNE pomozna;
             RET
-    
-    
+
+
     main: MOV A, [dolzina];
     	ADD A, 2
     	MOV C, 3
