@@ -108,6 +108,56 @@ Zapišite program, ki poišče najmanjše število v danem seznamu. Seznam naj b
     
 
 
+
+
+    JMP main
+    dolzina:
+        DB 10    ; število elementov v seznamu
+    seznam:
+        DB 50    ; seznam
+        DB 56
+        DB 60
+        DB 46
+        DB 44
+        DB 58
+        DB 42
+        DB 52
+        DB 48
+        DB 54
+    minimum:
+        DB 0    ; na koncu bo tu minimum
+    
+    
+    zamenjaj: MOV D, B
+    	CMP C, A
+    	JNE pomozna;
+    	RET
+    
+    pomozna: INC C
+    	MOV B, [C] ; shranjevanje novih elementov
+    	PUSH B
+    	SUB B, D
+    	POP B
+    	JBE zamenjaj
+    	CMP C, A
+    	JNE pomozna;
+            RET
+    
+    
+    main: MOV A, [dolzina];
+    	ADD A, 2
+    	MOV C, 3
+    	MOV D, [C] ; na d bo shranjeval min elemente
+    	MOV B, D
+    	CALL pomozna; 
+    	INC A
+    	MOV [A], D
+
+
+
+
+
+
 	
 
 
