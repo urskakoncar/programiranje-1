@@ -222,6 +222,75 @@ prvi poskus:
     poisciMinimum:
         HLT
 
+
+drugi poskus:
+
+
+    JMP main
+    dolzina:
+        DB 10    ; število elementov v seznamu
+    seznam:
+        DB 50    ; seznam
+        DB 56
+        DB 60
+        DB 46
+        DB 44
+        DB 58
+        DB 42
+        DB 52
+        DB 48
+        DB 54
+    minimum:
+        DB 0    ; na koncu bo tu minimum
+    
+    main:
+    	CALL starMain;
+        ; pripravimo parametre funkcije
+        MOV A, seznam
+        MOV C, seznam
+        ADD C, [dolzina]
+        ; pokličemo funkcijo
+        CALL poisciMinimum
+        ; v mesto, na katerega kaže minimum, shranimo vrednost, na katero kaže B
+        ; ker tega ne moremo narediti direktno, si pomagamo z registrom C
+        PUSH C 
+        MOV C, [B]
+        MOV [minimum], C
+        POP C
+        HLT
+    
+    
+    poisciMinimum:
+    	HLT
+    
+    zamenjaj: MOV D, B
+    	CMP C, A
+    	JNE pomozna;
+    	RET
+    
+    pomozna: INC C
+    	MOV B, [C] ; shranjevanje novih elementov
+    	PUSH B
+    	SUB B, D
+    	POP B
+    	JBE zamenjaj
+    	CMP C, A
+    	JNE pomozna;
+            RET
+    
+    
+    starMain: MOV A, [dolzina];
+    	ADD A, 2
+    	MOV C, 3
+    	MOV D, [C] ; na d bo shranjeval min elemente
+    	MOV B, D
+    	CALL pomozna; 
+    	INC A
+    	MOV [A], D
+    	RET
+   
+	
+
 ## Urejanje seznama
 
 Zapišite funkcijo `uredi`, ki elemente v rezini [A:C] uredi od najmanjšega do največjega. Pri tem naj vrednosti vseh registrov pusti pri miru. Eden najenostavnejših algoritmov za urejanje je urejanje z izbiranjem. V njem se zapeljete čez seznam, poiščete indeks najmanjšega elementa, nato pa ta element zamenjate s tistim na prvem mestu. Postopek nadaljujete s preostankom seznama, dokler ne pridete do konca.
