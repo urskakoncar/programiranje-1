@@ -20,10 +20,11 @@ let stevke b n =
 let take _ _ = failwith __LOC__
 let take n sez =
    let rec take_pomozna n sez nov =
-     match sez with
-       | [] -> nov
-       | x::xs -> if n >= List.length sez then sez else 
-         if n = 0 then nov else take_pomozna (n - 1) xs (nov @ [x])
+     match sez, n with
+       | [], _ -> List.rev nov
+       | _, 0 -> List.rev nov
+       | x::xs, n when n >= List.length sez -> sez
+       | x::xs, _ ->  take_pomozna (n - 1) xs (x :: nov)
    in
    take_pomozna n sez []
 (* let primer_1_4 = take 3 [ 1; 2; 3; 4; 5 ] *)
@@ -45,10 +46,10 @@ let filter_mapi _ _ = failwith __LOC__
 let filter_mapi f sez =
    let rec filter_mapi_pomozna f sez i nov =
      match sez with
-       | [] ->  nov
+       | [] -> List.rev nov
        | x::xs -> 
          match f i x with 
-         | Some rezultat -> filter_mapi_pomozna f xs (i + 1) (nov @ [rezultat]) 
+         | Some rezultat -> filter_mapi_pomozna f xs (i + 1) (rezultat :: nov) 
          | None -> filter_mapi_pomozna f xs (i + 1) nov
    in
    filter_mapi_pomozna f sez 0 []
@@ -65,38 +66,72 @@ type ('a, 'b) sum = In1 of 'a | In2 of 'b
 
 (** $A \times B \cong B \times A$ *)
 
-let phi1 _ = failwith __LOC__
-let psi1 _ = failwith __LOC__
-
+let phi1 (a, b) =
+   (b, a)
+ 
+ let psi1 (b, a) =
+   (a, b)
 (** $A + B \cong B + A$ *)
 
-let phi2 _ = failwith __LOC__
-let psi2 _ = failwith __LOC__
+let phi2 =
+   function
+   | In1 a -> In2 a
+   | In2 b -> In1 b
+ 
+ let psi2 =
+   function
+   | In1 b -> In2 b
+   | In2 a -> In1 a
 
 (** $A \times (B \times C) \cong (A \times B) \times C$ *)
 
-let phi3 _ = failwith __LOC__
-let psi3 _ = failwith __LOC__
+let phi3 (a, (b, c)) =
+   (a, b), c
+ 
+let psi3 ((a, b), c) =
+   a, (b, c)
 
 (** $A + (B + C) \cong (A + B) + C$ *)
 
-let phi4 _ = failwith __LOC__
-let psi4 _ = failwith __LOC__
+let phi4  =
+  function
+  | In1 a -> In1 (In1 a)
+  | In2 (In1 b) -> In1 (In2 b)
+  | In2 (In2 c) -> In2 c
+
+let psi4  =
+  function
+  | In1 (In1 a) -> In1 a
+  | In1 (In2 b) -> In2 (In1 b)
+  | In2 c -> In2 (In2 c)
 
 (** $A \times (B + C) \cong (A \times B) + (A \times C)$ *)
 
-let phi5 _ = failwith __LOC__
-let psi5 _ = failwith __LOC__
 
+let phi5 (a, vsota) =
+   match vsota with
+   | In1 b -> In1 (a, b)
+   | In2 c -> In2 (a, c)
+ 
+ let psi5 =
+   function
+   | In1 (a, b) -> (a, In1 b)
+   | In2 (a, c) -> (a, In2 c)
+   
 (** $A^{B + C} \cong A^B \times A^C$ *)
 
-let phi6 _ = failwith __LOC__
-let psi6 _ = failwith __LOC__
+let phi6 f = (fun b -> f (In1 b), fun c -> f (In2 c))
+
+let psi6 (f, g) vsota_b_in_c = 
+  match vsota_b_in_c with
+  | In1 a -> f a 
+  | In2 b -> g b
 
 (** $(A \times B)^C \cong A^C \times B^C$ *)
 
-let phi7 _ = failwith __LOC__
-let psi7 _ = failwith __LOC__
+let phi7 f = ((fun c -> fst (f c)), (fun c-> snd (f c)))
+let psi7 (f, g) = fun a -> (f a, g a)
+
 
 (* ## Polinomi ****************************************************************************************** *)
 
@@ -209,15 +244,29 @@ let odvod ((f, f') : odvedljiva) x = f' x
 let konstanta _ = failwith __LOC__
 let identiteta = ((fun _ -> failwith __LOC__), fun _ -> failwith __LOC__)
 
+let konstanta (c : float) : odvedljiva =
+   ((fun x -> c), (fun x -> 0.0))
+ 
+let identiteta : odvedljiva =
+   ((fun x -> x), (fun x -> 1.))
+
 (** Produkt in kvocient *)
 
 let ( **. ) _ _ = failwith __LOC__
 let ( //. ) _ _ = failwith __LOC__
+
+let ( **. ) ((f, f'): odvedljiva) ((g, g'): odvedljiva) : odvedljiva = 
+  ((fun x -> f x *. g x), (fun x -> f' x *. g x +. f x *. g' x))
+
+let ( //. ) ((f, f'): odvedljiva) ((g, g'): odvedljiva) : odvedljiva = 
+  ((fun x -> f x /. g x), (fun x -> (f' x *. g x -. f x *. g' x) /. (g x *. g x)))
 (* let kvadrat = identiteta **. identiteta *)
 
 (** Kompozitum *)
 
 let ( @@. ) _ _ = failwith __LOC__
+let ( @@. ) ((f, f'): odvedljiva) ((g, g'): odvedljiva) : odvedljiva = 
+  ((fun x -> f (g x)), (fun x -> f' (g x) *. g' x))
 (* let vedno_ena = (kvadrat @@. sinus) ++. (kvadrat @@. kosinus) *)
 (* let primer_4_1 = vrednost vedno_ena 12345. *)
 (* let primer_4_2 = odvod vedno_ena 12345. *)
@@ -246,6 +295,20 @@ let sifriraj kljuc niz =
 (** Inverzni ključ *)
 
 let inverz _ = failwith __LOC__
+let inverz kljuc =
+  let po_abecedi =
+    let dolzina_abecede = String.length kljuc in
+    let rec pomozna n nov =
+      match n with
+      | -1 -> String.concat "" nov
+      | _ -> pomozna (n - 1) (String.make 1 (crka n) :: nov)
+    in
+    pomozna (dolzina_abecede - 1) []
+  in  
+  let inverz_crka kljuc znak =
+    crka (String.index kljuc znak)
+  in
+  String.map (inverz_crka kljuc) po_abecedi
 (* let primer_5_4 = inverz quick_brown_fox *)
 (* let primer_5_5 = inverz rot13 = rot13 *)
 (* let primer_5_6 = inverz "BCDEA" *)
@@ -345,6 +408,22 @@ let slovar = String.split_on_char ' ' (String.uppercase_ascii besede)
 
 (** Razširjanje ključa s črko *)
 let dodaj_zamenjavo _ _ = failwith __LOC__
+let dodaj_zamenjavo (kljuc: string) ((prva_crka: char), (druga_crka: char)) : string option = 
+   let mesto_crke = indeks prva_crka in
+   let rec zamenjava_crke_v_nizu niz (crka: char) i n =
+     if n >= String.length niz then
+       "" 
+     else
+       let znak = String.get niz n in
+       let nov_znak = if n = i then crka else znak in
+       (String.make 1 nov_znak) ^ zamenjava_crke_v_nizu niz crka i (n + 1) 
+   in
+   if mesto_crke >= String.length kljuc then None 
+   else
+     match String.get kljuc mesto_crke with
+     | a when a = druga_crka -> Some kljuc
+     | '_' -> Some (zamenjava_crke_v_nizu kljuc druga_crka mesto_crke 0)
+     | _ -> None
 
 (* let primer_5_9 = dodaj_zamenjavo "AB__E" ('C', 'X') *)
 (* let primer_5_10 = dodaj_zamenjavo "ABX_E" ('C', 'X') *)
@@ -355,6 +434,21 @@ let dodaj_zamenjavo _ _ = failwith __LOC__
 (* S pomočjo funkcije `dodaj_zamenjavo` sestavite še funkcijo `dodaj_zamenjave : string -> string * string -> string option`, ki ključ razširi z zamenjavami, ki prvo besedo preslikajo v drugo. *)
 
 let dodaj_zamenjave _ _ = failwith __LOC__
+let dodaj_zamenjave kljuc (prva_beseda, druga_beseda) =
+   let dolzina_besed = 
+     if String.length prva_beseda = String.length druga_beseda then String.length prva_beseda 
+     else 0
+   in
+   if dolzina_besed = 0 then None 
+   else
+     let rec po_vseh_indeksih n niz =
+       if n >= dolzina_besed then Some niz
+       else
+         match dodaj_zamenjavo niz ((String.get prva_beseda n), (String.get druga_beseda n)) with
+         | Some nov_niz -> po_vseh_indeksih (n + 1) nov_niz
+         | None -> None
+     in 
+     po_vseh_indeksih 0 kljuc
 (* let primer_5_12 = dodaj_zamenjave "__________________________" ("HELLO", "KUNNJ") *)
 (* let primer_5_13 = dodaj_zamenjave "ABCDU_____________________" ("HELLO", "KUNNJ") *)
 (* let primer_5_14 = dodaj_zamenjave "ABCDE_____________________" ("HELLO", "KUNNJ") *)
@@ -364,6 +458,18 @@ let dodaj_zamenjave _ _ = failwith __LOC__
 (* Sestavite funkcijo `mozne_razsiritve : string -> string -> string list -> string list`, ki vzame ključ, šifrirano besedo ter slovar vseh možnih besed, vrne pa seznam vseh možnih razširitev ključa, ki šifrirano besedo slikajo v eno od besed v slovarju. *)
 
 let mozne_razsiritve _ _ _ = failwith __LOC__
+let mozne_razsiritve kljuc beseda seznam_besed = 
+   let rec besede_po_indeksih seznam nov i = 
+     if i = List.length seznam then List.rev nov
+     else
+       let nova_beseda = List.nth seznam i in 
+       let dodan_par = dodaj_zamenjave kljuc (beseda, nova_beseda) in
+       match dodan_par with
+       | Some dodan_par -> besede_po_indeksih seznam (dodan_par :: nov) (i + 1)
+       | None -> besede_po_indeksih seznam nov (i + 1)
+     in
+     besede_po_indeksih seznam_besed [] 0
+ 
 
 (* let primer_5_15 =
    slovar
