@@ -3,8 +3,6 @@
 (* ## Ogrevanje **************************************************************************************)
 
 (** Števke *)
-
-let stevke _ _ = failwith __LOC__
 let stevke b n = 
    let rec stevke_pomozna b n sez =
      match n with
@@ -16,8 +14,6 @@ let stevke b n =
 (* let primer_1_3 = stevke 16 ((3 * 16 * 16 * 16) + (14 * 16 * 16) + (15 * 16) + 9) *)
 
 (** Začetek seznama *)
-
-let take _ _ = failwith __LOC__
 let take n sez =
    let rec take_pomozna n sez nov =
      match sez, n with
@@ -31,8 +27,6 @@ let take n sez =
 (* let primer_1_5 = take 10 [ 1; 2; 3; 4; 5 ] *)
 
 (** Odstranjevanje ujemajočih *)
-
-let drop_while _ _ = failwith __LOC__
 let rec drop_while f sez =
    match sez with
        | [] -> []
@@ -42,7 +36,7 @@ let rec drop_while f sez =
 
 (** Funkcija `filter_mapi` *)
 
-let filter_mapi _ _ = failwith __LOC__
+
 let filter_mapi f sez =
    let rec filter_mapi_pomozna f sez i nov =
      match sez with
@@ -68,17 +62,17 @@ type ('a, 'b) sum = In1 of 'a | In2 of 'b
 
 let phi1 (a, b) =
    (b, a)
- 
- let psi1 (b, a) =
+let psi1 (b, a) =
    (a, b)
-(** $A + B \cong B + A$ *)
 
+
+(** $A + B \cong B + A$ *)
 let phi2 =
    function
    | In1 a -> In2 a
    | In2 b -> In1 b
  
- let psi2 =
+let psi2 =
    function
    | In1 b -> In2 b
    | In2 a -> In1 a
@@ -113,7 +107,7 @@ let phi5 (a, vsota) =
    | In1 b -> In1 (a, b)
    | In2 c -> In2 (a, c)
  
- let psi5 =
+let psi5 =
    function
    | In1 (a, b) -> (a, In1 b)
    | In2 (a, c) -> (a, In2 c)
@@ -139,40 +133,41 @@ type polinom = int list
 
 (** Odstranjevanje odvečnih ničel *)
 
-let pocisti _ = failwith __LOC__
-let rec pocisti sez = 
-   match List.rev sez with
-     |[] -> sez
-     |x::xs -> if x = 0 then pocisti (List.rev xs) else sez
+
+let rec pocisti sez : polinom = 
+  match List.rev sez with
+    | [] -> sez
+    | x :: xs when x = 0 -> pocisti (List.rev xs)
+    | _ -> sez
+
 (* let primer_3_1 = pocisti [ 1; -2; 3; 0; 0 ] *)
 
 (** Seštevanje *)
 
-let ( +++ ) _ _ = failwith __LOC__
-let rec ( +++ ) p1 p2 =
-   match p1, p2 with
-   | [], [] -> []
-   | [], _ -> pocisti p2
-   | _, [] -> pocisti p1
-   | x::xs, y::ys -> (x + y) :: pocisti (xs +++ ys)
+let rec ( +++ ) polinom1 polinom2 : polinom =
+  match polinom1, polinom2 with
+  | [], [] -> []
+  | [], _ -> pocisti polinom2
+  | _, [] -> pocisti polinom1
+  | x :: xs, y :: ys -> (x + y) :: pocisti (xs +++ ys)
 (* let primer_3_2 = [ 1; -2; 3 ] +++ [ 1; 2 ] *)
 (* let primer_3_3 = [ 1; -2; 3 ] +++ [ 1; 2; -3 ] *)
 
 (** Množenje *)
 
-let ( *** ) _ _ = failwith __LOC__
-let rec ( *** ) p1 p2 = 
-   match p1, p2 with
-   | [], [] -> []
-   | p1, [] -> []
-   | [], p2 -> []
-   | x::xs, y::ys-> (x * y) :: (([x] *** ys ) +++ (xs *** p2))
+let rec ( *** ) (polinom1: polinom) (polinom2: polinom) : polinom = 
+  match polinom1, polinom2 with
+  | [], [] -> []
+  | _, [] -> []
+  | [], _ -> []
+  | x :: xs, y :: ys-> (x * y) :: pocisti (([x] *** ys ) +++ (xs *** polinom2))
+
 (* let primer_3_4 = [ 1; 1 ] *** [ 1; 1 ] *** [ 1; 1 ] *)
 (* let primer_3_5 = [ 1; 1 ] *** [ 1; -1 ] *)
 
 (** Izračun vrednosti v točki *)
 
-let vrednost _ _ = failwith __LOC__
+
 let vrednost polinom tocka =
    let rec vrednost_pomozna polinom tocka indeks =
      let rec potenca st pot =
@@ -190,20 +185,79 @@ let vrednost polinom tocka =
 
 (** Odvajanje *)
 
-let odvod _ = failwith __LOC__
-let odvod polinom =
-   let rec odvod_pomozna polinom indeks = 
-     match polinom, indeks with
-     | [], _ -> []
-     | x::xs, 0 -> odvod_pomozna xs (indeks + 1)
-     | x::xs, _ -> (x * indeks) :: odvod_pomozna xs (indeks + 1)
-   in
-   odvod_pomozna polinom 0
+let odvod (polinom: polinom) : polinom  =
+  let rec odvod_pomozna polinom indeks = 
+    match polinom, indeks with
+    | [], _ -> []
+    | x :: xs, 0 -> odvod_pomozna xs (indeks + 1)
+    | x :: xs, _ -> (x * indeks) :: odvod_pomozna xs (indeks + 1)
+  in
+  odvod_pomozna (pocisti polinom) 0
 (* let primer_3_7 = odvod [ 1; -2; 3 ] *)
 
 (** Lep izpis *)
+let izpis (polinom: polinom) =
+  let stevilo_v_potenco n =
+    let rec pretvori_zadnjo_stevko stevilo nov =
+      if stevilo = 0 then
+        nov
+      else
+        let zadnja_stevka = stevilo mod 10 in
+        let potenca_niz =
+          match zadnja_stevka with
+          | 0 -> "⁰"
+          | 1 -> "¹"
+          | 2 -> "²"
+          | 3 -> "³"
+          | 4 -> "⁴"
+          | 5 -> "⁵"
+          | 6 -> "⁶"
+          | 7 -> "⁷"
+          | 8 -> "⁸"
+          | 9 -> "⁹"
+          | _ -> "" 
+        in
+        pretvori_zadnjo_stevko (stevilo / 10) (potenca_niz ^ nov) 
+    in pretvori_zadnjo_stevko n ""
+  in
+      
+  let rec pomozna_z_indeksi okrajsan_polinom indeks nov =
+    match okrajsan_polinom, indeks with
 
-let izpis _ = failwith __LOC__
+    | [], _ -> nov
+
+    | x :: xs, 0 when x > 0 && List.length xs = 0 -> pomozna_z_indeksi xs (indeks + 1) ((Int.to_string x) ^ nov)
+    | x :: xs, 0 when x > 0 -> pomozna_z_indeksi xs (indeks + 1) (" + " ^ (Int.to_string x) ^ nov)
+    | x :: xs, 0 when x < 0 && List.length xs = 0 -> pomozna_z_indeksi xs (indeks + 1) ((Int.to_string x) ^ nov)
+    | x :: xs, 0 when x < 0 -> pomozna_z_indeksi xs (indeks + 1) (" - " ^ (String.make 1 (String.get (Int.to_string x) 1)) ^ nov)
+    | x :: xs, 0 when x = 0 -> pomozna_z_indeksi xs (indeks + 1) nov
+
+    | x :: xs, 1 when x = 1 && List.length xs = 0 -> pomozna_z_indeksi xs (indeks + 1) ("x" ^ nov)
+    | x :: xs, 1 when x = 1 -> pomozna_z_indeksi xs (indeks + 1) (" + x" ^ nov)
+    | x :: xs, 1 when x > 1 && List.length xs = 0 -> pomozna_z_indeksi xs (indeks + 1) ((Int.to_string x) ^ " x" ^ nov)
+    | x :: xs, 1 when x > 1 -> pomozna_z_indeksi xs (indeks + 1) (" + " ^ (Int.to_string x) ^ " x" ^ nov)
+    | x :: xs, 1 when x > 1 && List.length xs = 0 -> pomozna_z_indeksi xs (indeks + 1) ((Int.to_string x) ^ " x" ^ nov)
+    | x :: xs, 1 when x = -1 -> pomozna_z_indeksi xs (indeks + 1) (" - x " ^ nov)
+    | x :: xs, 1 when x < -1 && List.length xs = 0 -> pomozna_z_indeksi xs (indeks + 1) ("- x " ^ nov)
+    | x :: xs, 1 when x < -1 -> pomozna_z_indeksi xs (indeks + 1) (" - " ^ (String.make 1 (String.get (Int.to_string x) 1)) ^ " x" ^ nov)
+    | x :: xs, 1 when x = 0 -> pomozna_z_indeksi xs (indeks + 1) nov
+
+    | x :: xs, _ when x = 1 && List.length xs = 0 -> pomozna_z_indeksi xs (indeks + 1) ("x" ^ (stevilo_v_potenco indeks) ^ nov)
+    | x :: xs, _ when x = 1 -> pomozna_z_indeksi xs (indeks + 1) (" + x" ^ (stevilo_v_potenco indeks) ^ nov)
+    | x :: xs, _ when x > 1 && List.length xs = 0 -> pomozna_z_indeksi xs (indeks + 1) ((Int.to_string x) ^ " x" ^ (stevilo_v_potenco indeks) ^ nov)
+    | x :: xs, _ when x > 1 -> pomozna_z_indeksi xs (indeks + 1) (" + " ^ (Int.to_string x) ^ " x" ^ (stevilo_v_potenco indeks) ^ nov)
+    | x :: xs, _ when x = -1 && List.length xs = 0 -> pomozna_z_indeksi xs (indeks + 1) ("-x" ^ (stevilo_v_potenco indeks) ^ nov)  
+    | x :: xs, _ when x = -1 -> pomozna_z_indeksi xs (indeks + 1) (" - x" ^ (stevilo_v_potenco indeks) ^ nov)
+    | x :: xs, _ when x < -1 && List.length xs = 0 -> pomozna_z_indeksi xs (indeks + 1) ((Int.to_string x) ^ " x" ^ (stevilo_v_potenco indeks) ^ nov)
+    | x :: xs, _ when x < -1 -> pomozna_z_indeksi xs (indeks + 1) (" - " ^ (String.make 1 (String.get (Int.to_string x) 1)) ^ " x" ^ (stevilo_v_potenco indeks) ^ nov)
+    | x :: xs, _ when x = 0 -> pomozna_z_indeksi xs (indeks + 1) nov
+
+    | _, _ -> failwith ""
+
+  in pomozna_z_indeksi polinom 0 ""
+
+
+
 (* let primer_3_8 = izpis [ 1; 2; 1 ] *)
 (* let primer_3_9 = izpis [ 1; 0; -1; 0; 1; 0; -1; 0; 1; 0; -1; 0; 1 ] *)
 (* let primer_3_10 = izpis [ 0; -3; 3; -1 ] *)
@@ -232,17 +286,12 @@ let ( ++. ) : odvedljiva -> odvedljiva -> odvedljiva =
 
 (** Vrednost odvoda *)
 
-let vrednost _ _ = failwith __LOC__
-let odvod _ _ = failwith __LOC__
-
 let vrednost ((f, f') : odvedljiva) x = f x
 
 let odvod ((f, f') : odvedljiva) x = f' x
 
 (** Osnovne funkcije *)
 
-let konstanta _ = failwith __LOC__
-let identiteta = ((fun _ -> failwith __LOC__), fun _ -> failwith __LOC__)
 
 let konstanta (c : float) : odvedljiva =
    ((fun x -> c), (fun x -> 0.0))
@@ -252,8 +301,7 @@ let identiteta : odvedljiva =
 
 (** Produkt in kvocient *)
 
-let ( **. ) _ _ = failwith __LOC__
-let ( //. ) _ _ = failwith __LOC__
+
 
 let ( **. ) ((f, f'): odvedljiva) ((g, g'): odvedljiva) : odvedljiva = 
   ((fun x -> f x *. g x), (fun x -> f' x *. g x +. f x *. g' x))
@@ -264,7 +312,7 @@ let ( //. ) ((f, f'): odvedljiva) ((g, g'): odvedljiva) : odvedljiva =
 
 (** Kompozitum *)
 
-let ( @@. ) _ _ = failwith __LOC__
+
 let ( @@. ) ((f, f'): odvedljiva) ((g, g'): odvedljiva) : odvedljiva = 
   ((fun x -> f (g x)), (fun x -> f' (g x) *. g' x))
 (* let vedno_ena = (kvadrat @@. sinus) ++. (kvadrat @@. kosinus) *)
@@ -280,7 +328,7 @@ let crka i = Char.chr (i + Char.code 'A')
 
 (** Šifriranje *)
 
-let sifriraj _ _ = failwith __LOC__
+
 let sifriraj kljuc niz = 
    let sifriraj_crka kljuc znak =
      if 'A' <= znak && znak <= 'Z'
@@ -294,16 +342,16 @@ let sifriraj kljuc niz =
 
 (** Inverzni ključ *)
 
-let inverz _ = failwith __LOC__
+
 let inverz kljuc =
   let po_abecedi =
     let dolzina_abecede = String.length kljuc in
-    let rec pomozna n nov =
+    let rec prvi_del_abecede_dolzine_n n nov =
       match n with
       | -1 -> String.concat "" nov
-      | _ -> pomozna (n - 1) (String.make 1 (crka n) :: nov)
+      | _ -> prvi_del_abecede_dolzine_n (n - 1) (String.make 1 (crka n) :: nov)
     in
-    pomozna (dolzina_abecede - 1) []
+    prvi_del_abecede_dolzine_n (dolzina_abecede - 1) []
   in  
   let inverz_crka kljuc znak =
     crka (String.index kljuc znak)
@@ -397,7 +445,7 @@ let besede =
    dear enemy reply drink occur support speech nature range steam motion path \
    liquid log meant quotient teeth shell neck"
 
-let slovar = [ (* TODO *) ]
+
 let slovar = String.split_on_char ' ' (String.uppercase_ascii besede)
 (* let primer_5_7 = take 42 slovar *)
 (* let primer_5_8 = List.nth slovar 321 *)
@@ -407,23 +455,25 @@ let slovar = String.split_on_char ' ' (String.uppercase_ascii besede)
 (* Napišite funkcijo `dodaj_zamenjavo : string -> char * char -> string option`, ki sprejme ključ ter ga poskusi razširiti z zamenjavo dane črke. Funkcija naj vrne `None`, če razširitev vodi v ključ, ki ni bijektiven (torej če ima črka že dodeljeno drugo zamenjavo ali če smo isto zamenjavo dodelili dvema različnima črkama). *)
 
 (** Razširjanje ključa s črko *)
-let dodaj_zamenjavo _ _ = failwith __LOC__
-let dodaj_zamenjavo (kljuc: string) ((prva_crka: char), (druga_crka: char)) : string option = 
-   let mesto_crke = indeks prva_crka in
-   let rec zamenjava_crke_v_nizu niz (crka: char) i n =
-     if n >= String.length niz then
-       "" 
-     else
-       let znak = String.get niz n in
-       let nov_znak = if n = i then crka else znak in
-       (String.make 1 nov_znak) ^ zamenjava_crke_v_nizu niz crka i (n + 1) 
-   in
-   if mesto_crke >= String.length kljuc then None 
-   else
-     match String.get kljuc mesto_crke with
-     | a when a = druga_crka -> Some kljuc
-     | '_' -> Some (zamenjava_crke_v_nizu kljuc druga_crka mesto_crke 0)
-     | _ -> None
+
+let dodaj_zamenjavo kljuc (prva_crka, druga_crka) : string option = 
+  let mesto_crke = indeks prva_crka in
+  let rec zamenjava_crke_v_nizu niz (crka: char) n =
+    if n >= String.length niz then
+      "" 
+    else
+      let znak = String.get niz n in
+      let nov_znak = if n = mesto_crke then crka else znak in
+      (String.make 1 nov_znak) ^ zamenjava_crke_v_nizu niz crka (n + 1) 
+  in
+  if mesto_crke >= String.length kljuc then None 
+  else
+    match String.get kljuc mesto_crke with
+    | a when a = druga_crka -> Some kljuc
+    | '_' -> Some (zamenjava_crke_v_nizu kljuc druga_crka 0)
+    | _ -> None
+
+
 
 (* let primer_5_9 = dodaj_zamenjavo "AB__E" ('C', 'X') *)
 (* let primer_5_10 = dodaj_zamenjavo "ABX_E" ('C', 'X') *)
@@ -433,7 +483,7 @@ let dodaj_zamenjavo (kljuc: string) ((prva_crka: char), (druga_crka: char)) : st
 
 (* S pomočjo funkcije `dodaj_zamenjavo` sestavite še funkcijo `dodaj_zamenjave : string -> string * string -> string option`, ki ključ razširi z zamenjavami, ki prvo besedo preslikajo v drugo. *)
 
-let dodaj_zamenjave _ _ = failwith __LOC__
+
 let dodaj_zamenjave kljuc (prva_beseda, druga_beseda) =
    let dolzina_besed = 
      if String.length prva_beseda = String.length druga_beseda then String.length prva_beseda 
@@ -457,18 +507,17 @@ let dodaj_zamenjave kljuc (prva_beseda, druga_beseda) =
 
 (* Sestavite funkcijo `mozne_razsiritve : string -> string -> string list -> string list`, ki vzame ključ, šifrirano besedo ter slovar vseh možnih besed, vrne pa seznam vseh možnih razširitev ključa, ki šifrirano besedo slikajo v eno od besed v slovarju. *)
 
-let mozne_razsiritve _ _ _ = failwith __LOC__
+
 let mozne_razsiritve kljuc beseda seznam_besed = 
-   let rec besede_po_indeksih seznam nov i = 
-     if i = List.length seznam then List.rev nov
-     else
-       let nova_beseda = List.nth seznam i in 
-       let dodan_par = dodaj_zamenjave kljuc (beseda, nova_beseda) in
-       match dodan_par with
-       | Some dodan_par -> besede_po_indeksih seznam (dodan_par :: nov) (i + 1)
-       | None -> besede_po_indeksih seznam nov (i + 1)
-     in
-     besede_po_indeksih seznam_besed [] 0
+  let rec besede_po_indeksih seznam nov =
+  match seznam with
+  | [] -> List.rev nov
+  | prva_beseda :: ostale_besede -> 
+    match dodaj_zamenjave kljuc (beseda, prva_beseda) with
+    | Some zamenjava -> besede_po_indeksih ostale_besede (zamenjava :: nov) 
+    | None -> besede_po_indeksih ostale_besede nov 
+  in
+  besede_po_indeksih seznam_besed []
  
 
 (* let primer_5_15 =
@@ -479,6 +528,46 @@ let mozne_razsiritve kljuc beseda seznam_besed =
 (** Odšifriranje *)
 
 (* Napišite funkcijo `odsifriraj : string -> string option`, ki sprejme šifrirano besedilo in s pomočjo slovarja besed ugane odšifrirano besedilo. Funkcija naj vrne `None`, če ni mogoče najti nobenega ustreznega ključa. *)
-let odsifriraj _ = failwith __LOC__
+let odsifriraj besedilo = 
+  (*vrne prvo od moznosti ali None*)
+  let sez_besed =
+    if besedilo = "" then failwith "Besedilo je prazno, obstaja neskončno ključev."
+    else String.split_on_char ' ' (String.uppercase_ascii besedilo)  in
+
+  let kljuc = String.make 26 '_' in 
+    
+  let zakljuci mozni_kljuci = 
+    match mozni_kljuci with
+    | [] -> None
+    | prvi :: vsi_ostali -> Some (sifriraj prvi besedilo)
+  in
+  (*  (če želimo vse rešitve)
+    let sifriraj_vse_kljuce kljuc = sifriraj kljuc besedilo in
+      let zakljuci mozni_kljuci = 
+        match mozni_kljuci with
+        | [] -> None
+        | _ -> Some (List.map sifriraj_vse_kljuce mozni_kljuci)
+      in 
+  *)
+  let rec pojdi_po_vseh_besedah trenutni_kljuci besede =
+    match besede with 
+    | [] -> zakljuci trenutni_kljuci
+    | prva_beseda :: preostal_seznam -> 
+        let rec pojdi_po_kljucih dobljeni_kljuci novi_kljuci = 
+        match dobljeni_kljuci with
+        | [] -> pojdi_po_vseh_besedah (List.flatten novi_kljuci) preostal_seznam
+        | prvi_kljuc :: ostali_kljuci -> 
+          let dodaj_kljuce = mozne_razsiritve prvi_kljuc prva_beseda slovar in 
+          let poglej_ce_je_kljuc_ze_notri klc =
+            if List.mem klc novi_kljuci then novi_kljuci 
+            else klc :: novi_kljuci
+          in
+          pojdi_po_kljucih ostali_kljuci (poglej_ce_je_kljuc_ze_notri dodaj_kljuce)
+      in pojdi_po_kljucih trenutni_kljuci []
+  in pojdi_po_vseh_besedah [kljuc] sez_besed
+(*Se opravičujem, ampak tale funkcija mi za dani primer melje tri minute, saj poišče vse možne ključe, vrne pa le prvega. 
+Da bi vrnil vse bi le pri funkciji zakljuci moral besedilo zasifrirati z vsemi kljuci. To se mi je zdelo uporabno, 
+ker so včasih vrnjena besedila kljub pravilnim besedam nesmiselna.*)     
+    
 (* let primer_5_16 = sifriraj quick_brown_fox "THIS IS A VERY HARD PROBLEM" *)
 (* let primer_5_17 = odsifriraj "VKBO BO T AUSD KTSQ MSJHNUF" *)
