@@ -20,6 +20,13 @@ module type NAT = sig
 
   val eq  : t -> t -> bool
   val zero : t
+  val one : t 
+  val ( ++ ) : t -> t-> t
+  val ( -- ) : t -> t-> t
+  val ( ** ) : t -> t-> t
+
+  val of_int : int -> t
+  val to_int : t -> int
   (* Dodajte manjkajoče! *)
   (* val to_int : t -> int *)
   (* val of_int : int -> t *)
@@ -36,9 +43,17 @@ end
 module Nat_int : NAT = struct
 
   type t = int
-  let eq x y = failwith "later"
+
+  let eq x y = (x = y)
   let zero = 0
-  (* Dodajte manjkajoče! *)
+  let one = 1
+
+  let ( ++ ) x y = x + y
+  let ( -- ) x y = if x - y < 0 then failwith "to ni naravno število" else x - y
+  let ( ** ) x y = x * y
+
+  let of_int x = x
+  let to_int x = x
 
 end
 
@@ -53,9 +68,49 @@ end
 
 module Nat_peano : NAT = struct
 
-  type t = unit (* To morate spremeniti! *)
-  let eq x y = failwith "later"
-  let zero = () (* To morate spremeniti! *)
+  type t = 
+  | Zero
+  | Succ of t
+
+  let rec eq x y = match x, y with
+  | Zero, Zero -> true 
+  | Succ _, Zero -> false
+  | Zero, Succ _ -> false
+  | Succ x', Succ y' -> eq x' y'
+
+  let zero = Zero 
+  let one = Succ Zero
+
+  let rec ( ++ ) x y = match x, y with
+  | Zero, Zero -> Zero
+  | _, Zero -> x
+  | Zero, _ -> y
+  | Succ x', Succ y' -> Succ (( ++ ) x y')
+  let rec ( -- ) x y = match x, y with
+  | Zero, Zero -> Zero
+  | _, Zero -> x
+  | Zero, _ -> failwith "To ni naravno število"
+  | Succ x', Succ y' -> ( -- ) x' y'
+
+  let rec ( ** ) x y = 
+  match x, y with
+  | Zero, Zero -> Zero
+  | Zero, _ -> Zero
+  | _, Zero -> Zero
+  | _ , Succ y' -> ( ** ) (( ++ ) x x ) y'
+
+  let rec of_int x = 
+  match x with
+  | 0 -> Zero
+  | x when x < 0 -> failwith "To ni naravno število."
+  | _ -> Succ (of_int (x - 1))
+
+  let to_int (x : t) = 
+    let rec aux acc = function
+    | Zero -> acc
+    | Succ x' -> aux (acc + 1) x'
+  in aux 0 x
+
   (* Dodajte manjkajoče! *)
 
 end
@@ -79,9 +134,25 @@ end
 let sum_nat_100 = 
   (* let module Nat = Nat_int in *)
   let module Nat = Nat_peano in
-  Nat.zero (* to popravite na ustrezen izračun *)
+  (* to popravite na ustrezen izračun *)
   (* |> Nat.to_int *)
+  let rec pomozna (vsota : int) (st : int) =
+    match st with
+    | 100 -> Nat.( ++ ) (Nat.of_int vsota) (Nat.of_int st)
+    | _ -> pomozna (Nat.to_int (Nat.( ++ ) (Nat.of_int vsota) (Nat.of_int st))) (st + 1)
+  in pomozna 0 1 
 (* val sum_nat_100 : int = 5050 *)
+
+let sum_nat_100_int = 
+  (* let module Nat = Nat_int in *)
+  let module Nat = Nat_int in
+  (* to popravite na ustrezen izračun *)
+  (* |> Nat.to_int *)
+  let rec pomozna (vsota : int) (st : int) =
+    match st with
+    | 100 -> Nat.( ++ ) (Nat.of_int vsota) (Nat.of_int st)
+    | _ -> pomozna (Nat.to_int (Nat.( ++ ) (Nat.of_int vsota) (Nat.of_int st))) (st + 1)
+  in pomozna 0 1
 
 (*----------------------------------------------------------------------------*
  ## Kompleksna števila
@@ -135,6 +206,13 @@ let sum_nat_100 =
 module type COMPLEX = sig
   type t
   val eq : t -> t -> bool
+  val zero : t
+  val one : t
+  val i : t
+  val negacija : t -> t
+  val konjugacija : t -> t
+  val ( ++ ) : t -> t -> t
+  val ( ** ) : t -> t -> t
   (* Dodajte manjkajoče! *)
 end
 
@@ -147,7 +225,17 @@ module Cartesian : COMPLEX = struct
 
   type t = {re : float; im : float}
 
-  let eq x y = failwith "later"
+  let eq x y = x.re = y.re && x.im = y.im
+
+  let zero = {re = 0.; im = 0.}
+  let one = {re = 1.; im = 0.}
+  let i = {re = 0.; im = 1.}
+  let negacija x = {re = -. x.re; im = -. x.im}
+  let konjugacija x = {re = x.re; im = -. x.im}
+  let ( ++ ) x y = {re = x.re +. y.re; im = x.im +. y.im}
+  let ( ** ) x y = {re = x.re *. y.re -. x.im *. y.im; 
+                    im = x.re +. y.im +. x.im *. y.re}
+
   (* Dodajte manjkajoče! *)
 
 end
@@ -162,13 +250,20 @@ end
 module Polar : COMPLEX = struct
 
   type t = {magn : float; arg : float}
+  
 
   (* Pomožne funkcije za lažje življenje. *)
   let pi = 2. *. acos 0.
   let rad_of_deg deg = (deg /. 180.) *. pi
   let deg_of_rad rad = (rad /. pi) *. 180.
 
-  let eq x y = failwith "later"
-  (* Dodajte manjkajoče! *)
-
+  let eq x y = x.magn = y.magn && x.arg = y.arg
+    let zero = {magn = 0.; arg = 0.}
+  let one = {magn = 1.; arg = 0.}
+  let i = {magn = 1.; arg = pi /. 2.}
+  let negacija x = {magn = x.magn ; arg = pi +. x.arg}
+  let konjugacija x = {magn = x.magn ; arg = -. x.arg}
+  let ( ++ ) = failwith ""
+  let ( ** ) = failwith ""
+  
 end

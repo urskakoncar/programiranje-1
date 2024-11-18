@@ -102,7 +102,7 @@ let rec intbool_map f_int f_bool = function
  Funkcija je repno rekurzivna.
 [*----------------------------------------------------------------------------*)
 
-let rec intbool_reverse _ = ()
+
 
 (*----------------------------------------------------------------------------*
  Funkcija `intbool_separate ib_list` loči vrednosti `ib_list` v par `list`
@@ -128,9 +128,15 @@ let rec intbool_separate _ = ()
  tip `specialisation`, ki loči med temi zaposlitvami.
 [*----------------------------------------------------------------------------*)
 
-type magic 
+type magic =
+| Fire
+| Frost 
+| Arcane
 
-type specialisation 
+type specialisation =
+| Historian
+| Teacher
+| Researcher
 
 (*----------------------------------------------------------------------------*
  Vsak od čarodejev začne kot začetnik, nato na neki točki postane študent, na
@@ -146,13 +152,16 @@ type specialisation
  `jaina`, ki je četrto leto študentka magije ledu.
 [*----------------------------------------------------------------------------*)
 
-type status 
+type status  = 
+| Newbie
+| Student of magic * int
+| Employed of magic * specialisation
 
-type wizard 
+type wizard = {ime : string; status : status}
 
-let professor  = ()
+let professor  = {ime = "Profesor"; status = Employed (Fire, Teacher)}
 
-let jaina  = ()
+let jaina  = {ime = "Jaina"; status = Student (Frost, 4)}
 
 (*----------------------------------------------------------------------------*
  Želimo prešteti koliko uporabnikov posamezne od vrst magije imamo na akademiji.
@@ -161,9 +170,13 @@ let jaina  = ()
  nov števec s posodobljenim poljem glede na vrednost `magic`.
 [*----------------------------------------------------------------------------*)
 
-type magic_counter 
+type magic_counter = {fire: int; frost: int; arcane: int}
 
-let update _ _ = ()
+let update trenutna_stevila = 
+  function
+  | Fire -> {trenutna_stevila with fire = trenutna_stevila.fire + 1}
+  | Frost -> {trenutna_stevila with frost = trenutna_stevila.frost + 1}
+  | Arcane -> {trenutna_stevila with arcane = trenutna_stevila.arcane + 1}
 
 (* let primer_carovniki_1 = update {fire = 1; frost = 1; arcane = 1} Arcane *)
 (* val primer_carovniki_1 : magic_counter = {fire = 1; frost = 1; arcane = 2} *)
@@ -173,7 +186,17 @@ let update _ _ = ()
  različnih vrst magij.
 [*----------------------------------------------------------------------------*)
 
-let count_magic _ = ()
+let count_magic seznam =
+  let rec pomozna_count_magic counter =
+    function
+    | [] -> counter
+    | {ime; status} :: ostali -> 
+      match status with
+      | Newbie -> pomozna_count_magic counter ostali
+      | Student (magija, _) -> pomozna_count_magic (update counter magija) ostali
+      | Employed (magija, _) -> pomozna_count_magic (update counter magija) ostali
+    in pomozna_count_magic {fire = 0; frost = 0; arcane = 0} seznam
+      
 
 (* let primer_carovniki_2 = count_magic [professor; professor; professor] *)
 (* val primer_carovniki_2 : magic_counter = {fire = 3; frost = 0; arcane = 0} *)
@@ -188,7 +211,23 @@ let count_magic _ = ()
  `None`.
 [*----------------------------------------------------------------------------*)
 
-let find_candidate _ _ _ = ()
+let find_candidate magija delo seznam = 
+  let potrebna_leta = 
+    match delo with
+    | Historian -> 3
+    | Researcher -> 4
+    | Teacher -> 5
+  in
+
+  let rec pomozna_find_candidate =
+    function
+    | [] -> None
+    | oseba :: ostali ->
+      match oseba.status with
+      | Student (studentova_magija, leta) when studentova_magija = magija && leta >= potrebna_leta -> Some oseba.ime
+      | _ -> pomozna_find_candidate ostali
+
+  in pomozna_find_candidate seznam
 
 (* let primer_carovniki_3 =
   find_candidate Frost Researcher [professor; jaina] *)
