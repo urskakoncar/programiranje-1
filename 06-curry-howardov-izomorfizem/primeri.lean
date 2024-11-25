@@ -14,3 +14,27 @@ def f (x : Int) := x + 3
 
 def dokaz_nase_izjave : (A × B → C) → (A → (B → C)) :=
   fun (f : (A × B → C)) => (fun (x : A) => (fun (y : B) => f (x, y)))
+
+
+vaje; dokaz 2 + 2 = 4
+
+nth_rewrite 2 [two_eq_succ_one]
+rw [one_eq_succ_zero]
+rw [add_succ]
+rw [add_succ]
+rw [add_zero]
+rw [<- three_eq_succ_two]
+rw [<- four_eq_succ_three]
+rfl 4
+
+
+dokaz komutivnosti
+
+induction a with h hd
+rw [zero_add, zero_add]
+rw [add_comm]
+rfl
+rw [succ_add, succ_add, succ_add]
+rw [succ_add]
+rw [hd]
+rfl
