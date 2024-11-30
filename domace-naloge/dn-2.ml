@@ -39,7 +39,6 @@
  procesorja **A**, **B**, **C** in **D**.
 [*----------------------------------------------------------------------------*)
 
-type register 
 type register = 
 | A
 | B
@@ -60,7 +59,6 @@ type register =
  registri ali števila.
 [*----------------------------------------------------------------------------*)
 
-type expression 
 type expression = 
 | Register of register
 | Const of int
@@ -78,8 +76,7 @@ type expression =
  celoštevilskimi konstantami, definirajte še tip `address`, ki naj bo naštevni
  tip z eno samo varianto `Address` s celoštevilskim argumentom.
 [*----------------------------------------------------------------------------*)
-
-type address 
+ 
 type address = 
 | Address of int
 
@@ -129,24 +126,24 @@ type address =
 
 type instruction =
   | MOV of register * expression
-  (* | ADD of TODO *)
-  (* | SUB of TODO *)
+  | ADD of register * expression
+  | SUB of register * expression
   | INC of register
-  (* | DEC of TODO *)
-  (* | MUL of TODO *)
+  | DEC of register
+  | MUL of expression
   | DIV of expression
-  (* | AND of TODO *)
-  (* | OR of TODO *)
-  (* | XOR of TODO *)
-  (* | NOT of TODO *)
-  (* | CMP of TODO *)
+  | AND of register * expression
+  | OR of register * expression
+  | XOR of register * expression
+  | NOT of register
+  | CMP of register * expression
   | JMP of address
-  (* | JA of TODO *)
-  (* | JAE of TODO *)
-  (* | JB of TODO *)
-  (* | JBE of TODO *)
-  (* | JE of TODO *)
-  (* | JNE of TODO *)
+  | JA of address
+  | JAE of address
+  | JB of address
+  | JBE of address
+  | JE of address
+  | JNE of address
   | CALL of address
   | RET
   | PUSH of expression
@@ -244,7 +241,17 @@ type instruction =
  - `stack`: seznam celoštevilskih vrednosti na skladu.
 [*----------------------------------------------------------------------------*)
 
-type state 
+type state = {
+  instructions: instruction array;
+  a : int; 
+  b : int; 
+  c : int; 
+  d : int;
+  ip : address;
+  zero : bool;
+  carry : bool;
+  stack : int list
+  }
 
 (* let primer_tipi_6 = {
   instructions = [| MOV (A, Register B); MOV (C, Const 42); JA (Address 10); HLT |];
@@ -290,7 +297,20 @@ type state
  seznama v tabelo pomagate z uporabo funkcije `Array.of_list`.
 [*----------------------------------------------------------------------------*)
 
-let init _ = ()
+let init seznam_ukazov =
+  let empty = {
+    instructions = [||];
+    a = 0;
+    b = 0;
+    c = 0;
+    d = 0;
+    ip = Address 0;
+    zero = false;
+    carry = false;
+    stack = [];
+  }
+  in
+  {empty with instructions = Array.of_list seznam_ukazov}
 
 (* let primer_tipi_7 = init [ MOV (A, Register B); MOV (C, Const 42); JA (Address 10); HLT ] *)
 (* val primer_tipi_7 : state =
@@ -318,7 +338,13 @@ let init _ = ()
  funkcija vrne `None`.
 [*----------------------------------------------------------------------------*)
 
-let read_instruction _ = ()
+let read_instruction stanje_pomnilnika = 
+  let st_ukaza = 
+    match stanje_pomnilnika.ip with
+    | Address x -> x
+  in
+  let tabela_ukazov = stanje_pomnilnika.instructions in
+  if st_ukaza < Array.length tabela_ukazov then Some tabela_ukazov.(st_ukaza) else None
 
 (* let primer_izvajanje_1 =
   [
@@ -334,7 +360,12 @@ let read_instruction _ = ()
  registra v danem stanju.
 [*----------------------------------------------------------------------------*)
 
-let read_register _ _ = ()
+let read_register stanje_pomnilnika =
+  function
+  | A -> stanje_pomnilnika.a 
+  | B -> stanje_pomnilnika.b 
+  | C -> stanje_pomnilnika.c 
+  | D -> stanje_pomnilnika.d
 
 (* let primer_izvajanje_2 =
   read_register { empty with a = 10; b = 42 } B *)
@@ -345,7 +376,10 @@ let read_register _ _ = ()
  celoštevilsko vrednost izraza v danem stanju.
 [*----------------------------------------------------------------------------*)
 
-let read_expression _ _ = ()
+let read_expression stanje_pomnilnika = 
+  function
+  | Register x -> read_register stanje_pomnilnika x
+  | Const x -> x 
 
 (* let primer_izvajanje_3 =
   read_expression { empty with a = 10; b = 20 } (Register B) *)
@@ -365,7 +399,12 @@ let read_expression _ _ = ()
  novo stanje.
 [*----------------------------------------------------------------------------*)
 
-let write_register _ _ _ = ()
+let write_register stanje_pomnilnika register vrednost = 
+  match register with
+  | A -> {stanje_pomnilnika with a = vrednost}
+  | B -> {stanje_pomnilnika with b = vrednost}
+  | C -> {stanje_pomnilnika with c = vrednost}
+  | D -> {stanje_pomnilnika with d = vrednost}
 
 (* let primer_izvajanje_5 =
   write_register { empty with c = 42 } D 24 *)
@@ -379,7 +418,8 @@ let write_register _ _ _ = ()
  s spremenjenim registrom.
 [*----------------------------------------------------------------------------*)
 
-let perform_unop _ _ _ = ()
+let perform_unop f stanje_pomnilnika register = 
+  write_register stanje_pomnilnika register (f (read_register stanje_pomnilnika register))
 
 (* let primer_izvajanje_6 =
   perform_unop (fun x -> 101 * x) { empty with c = 5 } C *)
@@ -393,7 +433,13 @@ let perform_unop _ _ _ = ()
  Funkcija naj vrne novo stanje s spremenjenim registrom.
 [*----------------------------------------------------------------------------*)
 
-let perform_binop _ _ _ _ = ()
+let perform_binop f stanje_pomnilnika register izraz = 
+  let element_v_funkciji = 
+    match izraz with 
+    | Register x -> read_register stanje_pomnilnika x
+    | Const x ->  x
+  in
+  write_register stanje_pomnilnika register (f (read_register stanje_pomnilnika register) element_v_funkciji)
 
 (* let primer_izvajanje_7 =
   perform_binop ( * ) { empty with c = 5 } C (Const 101) *)
@@ -410,7 +456,9 @@ let perform_binop _ _ _ _ = ()
  povečan za 1, saj v našem primeru vsi ukazi zasedejo enako prostora).
 [*----------------------------------------------------------------------------*)
 
-let next _ = ()
+let next = 
+  function 
+  | Address x -> Address (x + 1)
 
 (* let primer_izvajanje_8 =
   next (Address 41) *)
@@ -422,8 +470,10 @@ let next _ = ()
  naslednji ukaz.
 [*----------------------------------------------------------------------------*)
 
-let jump _ _ = ()
-let proceed _ = ()
+let jump stanje_pomnilnika naslov =
+  {stanje_pomnilnika with ip = naslov}
+let proceed stanje_pomnilnika = 
+  {stanje_pomnilnika with ip = next stanje_pomnilnika.ip}
 
 (* let primer_izvajanje_8 =
   jump { empty with ip = Address 42} (Address 10) *)
@@ -444,8 +494,12 @@ let proceed _ = ()
  Če je sklad prazen, naj funkcija `pop_stack` sproži izjemo.
 [*----------------------------------------------------------------------------*)
 
-let push_stack _ _ = ()
-let pop_stack _ = ()
+let push_stack stanje_pomnilnika stevilo =
+  {stanje_pomnilnika with stack = stevilo :: stanje_pomnilnika.stack}
+let pop_stack stanje_pomnilnika =
+  match stanje_pomnilnika.stack with
+  | [] -> failwith "Sklad je prazen"
+  | x :: xs -> (x, {stanje_pomnilnika with stack = xs})
 
 (* let primer_izvajanje_10 =
   push_stack { empty with stack = [1; 2; 3] } 42 *)
@@ -471,7 +525,10 @@ let pop_stack _ = ()
  kadar je prvo število manjše.Funkcija naj vrne novo stanje.
 [*----------------------------------------------------------------------------*)
 
-let compare _ _ _ = ()
+let compare stanje_pomnilnika (stevilo1: int) (stevilo2: int) = 
+  let nov_zero = (stevilo1 = stevilo2) in
+  let nov_carry = (stevilo1 < stevilo2) in
+  {stanje_pomnilnika with zero = nov_zero; carry = nov_carry}
 
 (* let primer_izvajanje_12 =
   compare empty 24 42 *)
@@ -485,7 +542,11 @@ let compare _ _ _ = ()
  funkcija skoči na naslednji ukaz.
 [*----------------------------------------------------------------------------*)
 
-let conditional_jump _ _ _ = ()
+(*Tukej je profesor popravil navodila v state -> address -> bool -> state*)
+let conditional_jump stanje_pomnilnika naslov vrednost =
+  match vrednost with
+  | true -> jump stanje_pomnilnika naslov
+  | false -> proceed stanje_pomnilnika
 
 (* let primer_izvajanje_13 =
   conditional_jump { empty with ip = Address 42 } (Address 10) true *)
@@ -508,7 +569,9 @@ let conditional_jump _ _ _ = ()
  na dani naslov in na sklad doda naslednji naslov.
 [*----------------------------------------------------------------------------*)
 
-let call _ _ = ()
+let call stanje_pomnilnika naslov = 
+  match next stanje_pomnilnika.ip with
+  | Address x -> push_stack (jump stanje_pomnilnika naslov) x
 
 (* let primer_izvajanje_15 =
   call { empty with ip = Address 42 } (Address 10) *)
@@ -521,7 +584,10 @@ let call _ _ = ()
  ki je na vrhu sklada, in odstrani ta naslov s sklada.
 [*----------------------------------------------------------------------------*)
 
-let return _ = ()
+let return stanje_pomnilnika = 
+  let naslov = fst (pop_stack stanje_pomnilnika) in
+  let novo_stanje_pomnilnika = snd (pop_stack stanje_pomnilnika) in
+  {novo_stanje_pomnilnika with ip = (Address naslov)}
 
 (* let primer_izvajanje_16 =
   return { empty with ip = (Address 100); stack = [42; 43; 44] } *)
@@ -571,7 +637,35 @@ let return _ = ()
   | HLT -> failwith "Cannot execute instruction" *)
 (* val run_instruction : state -> instruction -> state = <fun> *)
 
-let run_instruction _ _ = ()
+let run_instruction st = function
+  | MOV (reg, exp) -> write_register st reg (read_expression st exp) |> proceed
+  | ADD (reg, exp) -> perform_binop ( + ) st reg exp |> proceed
+  | SUB (reg, exp) -> if (read_register st reg) < (read_expression st exp) then failwith "Število ne sme biti negativno" 
+                      else perform_binop ( - ) st reg exp |> proceed
+  | INC reg -> perform_unop succ st reg |> proceed
+  | DEC reg -> perform_unop (fun x -> if x = 0 then failwith "Število ne sme biti negativno" else x - 1) st reg |> proceed 
+  | MUL exp -> perform_unop (fun x -> x * (read_expression st exp)) st A |> proceed
+  | DIV exp -> perform_unop (fun x -> x / (read_expression st exp)) st A |> proceed
+  (* Pozor, OCaml land/lor/lxor interpretira kot simbole, zato jih pišemo infiksno! *)
+  | AND (reg, exp) -> perform_binop ( land ) st reg exp |> proceed
+  | OR (reg, exp) -> perform_binop ( lor ) st reg exp |> proceed
+  | XOR (reg, exp) -> perform_binop ( lxor ) st reg exp |> proceed
+  | NOT reg -> perform_unop lnot st reg |> proceed
+  | CMP (reg, exp) -> compare st (read_register st reg) (read_expression st exp) |> proceed
+  | JMP add -> jump st add 
+  | JA add -> conditional_jump st add (not st.carry && not st.zero)
+  | JAE add -> conditional_jump st add (not st.carry) 
+  | JB add -> conditional_jump st add (st.carry && not st.zero)
+  | JBE add -> conditional_jump st add st.carry 
+  | JE add -> conditional_jump st add st.zero 
+  | JNE add -> conditional_jump st add (not st.zero) 
+  | CALL add -> call st add 
+  | RET -> return st 
+  | PUSH exp -> push_stack st (read_expression st exp) |> proceed
+  | POP reg ->
+      let n, st' = pop_stack st in
+      write_register st' reg n |> proceed
+  | HLT -> failwith "Cannot execute instruction"
 
 (*----------------------------------------------------------------------------*
  Napišite funkcijo `run_program : state -> state`, ki izvaja ukaze v danem
@@ -579,7 +673,12 @@ let run_instruction _ _ = ()
  ukaznega pomnilnika. Funkcija naj vrne končno stanje.
 [*----------------------------------------------------------------------------*)
 
-let rec run_program _ = ()
+let rec run_program stanje_pomnilnika =
+  let ukaz = read_instruction stanje_pomnilnika in
+  match ukaz with
+  | Some HLT -> stanje_pomnilnika
+  | Some x -> run_program (run_instruction stanje_pomnilnika x)
+  | None -> stanje_pomnilnika
 
 (* let primer_izvajanje_16 =
   fibonacci 10
@@ -615,7 +714,13 @@ let rec run_program _ = ()
  register.
 [*----------------------------------------------------------------------------*)
 
-let parse_register _ = ()
+let parse_register niz : register = 
+  match niz with
+  | "A" -> A 
+  | "B" -> B 
+  | "C" -> C 
+  | "D" -> D 
+  | _ -> failwith "To ni register"
 
 let primer_branje_1 = parse_register "A"
 (* val primer_branje_1 : register = A *)
@@ -625,7 +730,16 @@ let primer_branje_1 = parse_register "A"
  izraz.
 [*----------------------------------------------------------------------------*)
 
-let parse_expression _ = ()
+let parse_expression niz : expression = 
+  match niz with 
+  | "A" -> Register A 
+  | "B" -> Register B 
+  | "C" -> Register C 
+  | "D" -> Register D 
+  | drugo -> 
+    match int_of_string_opt drugo with
+    | Some st -> Const st
+    | None -> failwith "Izraz ni niti register niti konstanta"
 
 let primer_branje_2 = parse_expression "A"
 (* val primer_branje_2 : expression = Register A *)
@@ -644,7 +758,10 @@ let primer_branje_3 = parse_expression "42"
  `String.sub`.
 [*----------------------------------------------------------------------------*)
 
-let clean_line _ = ()
+let clean_line niz =
+  match String.index_opt niz ';' with
+  | Some i -> String.trim (String.sub niz 0 i)
+  | None -> String.trim niz
 
 let primer_branje_4 = clean_line "   MOV A, 42    ; To je komentar   "
 (* val primer_branje_4 : string = "MOV A, 42" *)
@@ -655,7 +772,16 @@ let primer_branje_4 = clean_line "   MOV A, 42    ; To je komentar   "
  vrstice.
 [*----------------------------------------------------------------------------*)
 
-let clean_lines _ = ()
+let clean_lines seznam_vrstic = 
+  let rec pomozna_clean_lines stare_vrstice nove_vrstice = 
+    match stare_vrstice with
+    | [] -> List.rev nove_vrstice
+    | x :: xs -> 
+      match clean_line x with
+      | "" -> pomozna_clean_lines xs nove_vrstice
+      | vrstica -> pomozna_clean_lines xs (vrstica :: nove_vrstice)
+    in
+    pomozna_clean_lines seznam_vrstic []
 
 (*----------------------------------------------------------------------------*
  ### Oznake
@@ -674,7 +800,13 @@ let clean_lines _ = ()
  podan direktno s številom ali pa z eno izmed oznak v seznamu.
 [*----------------------------------------------------------------------------*)
 
-let parse_address _ _ = ()
+let parse_address (seznam_nizov_in_naslovov: (string * address) list) niz = 
+  let rec pomozna_parse_address sez_nizov = 
+    match sez_nizov with
+    | [] -> Address (int_of_string niz)
+    | (ime, naslov) :: xs -> if ime = niz then naslov
+      else pomozna_parse_address xs
+    in pomozna_parse_address seznam_nizov_in_naslovov
 
 (* let primer_branje_5 = parse_address [("main", Address 42)] "main" *)
 (* val primer_branje_5 : address = Address 42 *)
@@ -687,7 +819,12 @@ let parse_address _ _ = ()
  se niz konča z dvopičjem, sicer pa vrne `None`.
 [*----------------------------------------------------------------------------*)
 
-let parse_label _ = ()
+let parse_label niz =
+  let indeks_zadnjega_znaka = String.length niz - 1 
+  in 
+  match String.get niz indeks_zadnjega_znaka with
+  | ':' -> Some (String.sub niz 0 indeks_zadnjega_znaka)
+  | _ -> None
 
 let primer_branje_7 = parse_label "main:"
 (* val primer_branje_7 : string option = Some "main" *)
@@ -702,7 +839,15 @@ let primer_branje_8 = parse_label "MOV A, 42"
  pusti nespremenjene.
 [*----------------------------------------------------------------------------*)
 
-let parse_labels _ = ()
+let parse_labels seznam_nizov =
+  let rec pomozna_parse_labels vsi_nizi seznam_ukazov_z_naslovi nespremenjene_vrstice st_naslova = 
+    match vsi_nizi with
+    | [] -> (seznam_ukazov_z_naslovi, List.rev nespremenjene_vrstice)
+    | x :: xs ->
+      match parse_label x with 
+      | Some ukaz -> pomozna_parse_labels xs ((ukaz, Address st_naslova) :: seznam_ukazov_z_naslovi) nespremenjene_vrstice st_naslova
+      | None -> pomozna_parse_labels xs seznam_ukazov_z_naslovi (x :: nespremenjene_vrstice) (st_naslova + 1)
+    in pomozna_parse_labels seznam_nizov [] [] 0
 
 let primer_branje_9 =
   parse_labels ["JMP main"; "main:"; "MOV A, 0"; "loop:"; "INC A"; "JMP loop"]
@@ -715,7 +860,7 @@ let primer_branje_9 =
  string -> instruction`, ki iz niza prebere ukaz.
 [*----------------------------------------------------------------------------*)
 
-(* let parse_instruction labels line =
+let parse_instruction labels line =
   let tokens =
     line
     |> String.split_on_char ' '
@@ -725,30 +870,30 @@ let primer_branje_9 =
   in
   match tokens with
   | ["MOV"; reg; exp] -> MOV (parse_register reg, parse_expression exp)
-  (* | ["ADD"; reg; exp] -> TODO *)
-  (* | ["SUB"; reg; exp] -> TODO *)
+  | ["ADD"; reg; exp] -> ADD (parse_register reg, parse_expression exp)
+  | ["SUB"; reg; exp] -> SUB (parse_register reg, parse_expression exp)
   | ["INC"; reg] -> INC (parse_register reg)
-  (* | ["DEC"; reg] -> TODO *)
-  (* | ["MUL"; exp] -> TODO *)
-  (* | ["DIV"; exp] -> TODO *)
-  (* | ["AND"; reg; exp] -> TODO *)
-  (* | ["OR"; reg; exp] -> TODO *)
-  (* | ["XOR"; reg; exp] -> TODO *)
-  (* | ["NOT"; reg] -> TODO *)
-  (* | ["CMP"; reg; exp] -> TODO *)
+  | ["DEC"; reg] -> DEC (parse_register reg)
+  | ["MUL"; exp] -> MUL (parse_expression exp)
+  | ["DIV"; exp] -> DIV (parse_expression exp)
+  | ["AND"; reg; exp] -> AND (parse_register reg, parse_expression exp)
+  | ["OR"; reg; exp] -> OR (parse_register reg, parse_expression exp)
+  | ["XOR"; reg; exp] -> XOR (parse_register reg, parse_expression exp)
+  | ["NOT"; reg] -> NOT (parse_register reg)
+  | ["CMP"; reg; exp] -> CMP (parse_register reg, parse_expression exp)
   | ["JMP"; add] -> JMP (parse_address labels add)
-  (* | ["JA"; add] -> TODO *)
-  (* | ["JAE"; add] -> TODO *)
-  (* | ["JB"; add] -> TODO *)
-  (* | ["JBE"; add] -> TODO *)
-  (* | ["JE"; add] -> TODO *)
-  (* | ["JNE"; add] -> TODO *)
-  (* | ["CALL"; add] -> TODO *)
+  | ["JA"; add] -> JA (parse_address labels add)
+  | ["JAE"; add] -> JAE (parse_address labels add)
+  | ["JB"; add] -> JB (parse_address labels add)
+  | ["JBE"; add] -> JBE (parse_address labels add)
+  | ["JE"; add] -> JE (parse_address labels add)
+  | ["JNE"; add] -> JNE (parse_address labels add)
+  | ["CALL"; add] -> CALL (parse_address labels add)
   | ["RET"] -> RET
   | ["PUSH"; exp] -> PUSH (parse_expression exp)
   | ["POP"; reg] -> POP (parse_register reg)
   | ["HLT"] -> HLT
-  | _ -> failwith ("Invalid instruction: " ^ line) *)
+  | _ -> failwith ("Invalid instruction: " ^ line)
 
 (* let primer_branje_10 =
   List.map (parse_instruction [("main", Address 42)]) ["MOV A, 42"; "CALL main"; "HLT"] *)
@@ -762,7 +907,12 @@ let primer_branje_9 =
  funkcija vrne končno stanje.
 [*----------------------------------------------------------------------------*)
 
-let run _ = ()
+let run niz_z_ukazi =
+  let seznam_vrstic = clean_lines (String.split_on_char '\n' niz_z_ukazi) in
+  let seznam_navodil = parse_labels seznam_vrstic in
+  let (oznake, ukazi) = seznam_navodil in
+  let stanje_pomnilnika = init (List.map (parse_instruction oznake) ukazi) in
+  run_program stanje_pomnilnika
 
 let fibonacci = {|
   JMP main
