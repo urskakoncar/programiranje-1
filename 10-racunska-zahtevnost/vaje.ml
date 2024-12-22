@@ -5,6 +5,24 @@ Natančno definirajte pogoje, da funkcija `f` uredi seznam.
 (*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*]
  Urejanje z Vstavljanjem
 [*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*)
+(*to delamo zato da vidmo casovno zahtevnost od obracanja???*)
+let rec rev xs =
+    match xs with
+    | [] -> [] (* O(1) *)
+    | x :: xs -> (rev xs) @ [x] (* operacije @ + [x] + rev_xs' -> (n := |xs|) + 1 +  neki??? -> O(vsota tega) *)
+    (* n = |xs|, torej n - 1 = |xs'|*) (*naj bo f(n) casovna zahtevnost tele funkcije, potem: f(n) = (n - 1) + 1 + f(n - 1)*)
+    (*dobimo O(n^2), kar ni zares dobr!*)
+
+let rev' xs =
+    let rec aux ys acc =
+        match ys with
+        | [] -> acc
+        | y :: ys' -> 
+            let acc' = y :: acc in
+            aux ys' acc'
+        in
+    aux xs []
+    (*tle je pa f(n) = 1 + f(n - 1), kar pa pomojm da O(n)*)
 
 (*----------------------------------------------------------------------------*]
  Funkcija [insert y xs] vstavi [y] v že urejen seznam [xs] in vrne urejen
@@ -17,14 +35,44 @@ Natančno definirajte pogoje, da funkcija `f` uredi seznam.
  # insert 7 [];;
  - : int list = [7]
 [*----------------------------------------------------------------------------*)
+let insert y xs = 
+    let rec pomozna_insert xs' nov = 
+        match xs' with
+        | [] -> List.rev (y :: (List.rev nov))
+        | x :: xs'' -> 
+            if x > y then nov @ [y] @ xs' 
+            else pomozna_insert xs'' (List.rev (x :: (List. rev nov)))
+    in pomozna_insert xs []
+(*A je to tko ful prevelka casovna zahtevnost?????*)
+
+(*to bomo zdej skupej sestavl:*)
+let rec insert num lst =
+    match lst with
+    | [] -> num :: [] (*O(1)*)
+    | x :: xs -> (*razpakiranje je O(1)*)
+        if x > num then 
+            num :: x :: xs (* [num] @ [x] @ xs *) 
+            (*O(3)*) 
+        else 
+            x :: (insert num xs) (* [x] @ (insert num xs) *)
+            (*O(1 + f(n - 1))*)
+
+        (*cel ta skupni del bo makximum telih vsot*)
+    (*cas odvisen od n = |lst| *)
+    (*skupi O(n)*)
 
 
 (*----------------------------------------------------------------------------*]
  Prazen seznam je že urejen. Funkcija [insert_sort] uredi seznam tako da
  zaporedoma vstavlja vse elemente seznama v prazen seznam.
 [*----------------------------------------------------------------------------*)
-
-
+let insert_sort sez =
+    let rec pomozna_insert_sort star_sez nov_sez =
+        match star_sez with
+        | [] -> nov_sez
+        | x :: xs -> pomozna_insert_sort xs (insert x nov_sez)
+    in pomozna_insert_sort sez []
+(*ce je to prov narjen bi mogl bit O(n^2), ker insert zahtevnosti n, kar uporabi za n elt*)
 
 (*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*]
  Urejanje z Izbiranjem
