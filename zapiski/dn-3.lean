@@ -10,10 +10,29 @@ set_option autoImplicit false
 ------------------------------------------------------------------------------/
 
 def vsota_prvih : Nat → Nat :=
-  sorry
+  fun n =>
+    match n with
+    | Nat.zero => Nat.zero
+    | Nat.succ n => Nat.succ n + vsota_prvih n
 
-theorem gauss : (n : Nat) → 2 * vsota_prvih n = n * (n + 1) := by
-  sorry
+
+theorem gauss : (n : Nat) → 2 * vsota_prvih n = n * (n + 1) :=
+  by
+    intro n
+    induction n with
+    | zero =>
+      simp[vsota_prvih]
+    | succ n ip =>
+      simp [vsota_prvih]
+      simp [Nat.mul_add]
+      simp [ip]
+      simp [Nat.add_mul, Nat.mul_add, Nat.add_comm (n * n + n)]
+
+      sorry
+
+
+
+
 
 theorem cisto_pravi_gauss : (n : Nat) → vsota_prvih n = (n * (n + 1)) / 2 := by
   sorry
@@ -40,7 +59,11 @@ def stakni : {A : Type} → {m n : Nat} → Vektor A m → Vektor A n → Vektor
   | .sestavljen x xs' => by rw [Nat.add_right_comm]; exact Vektor.sestavljen x (stakni xs' ys)
 
 def obrni : {A : Type} → {n : Nat} → Vektor A n → Vektor A n :=
-  sorry
+  fun xs =>
+  match xs with
+  | .prazen => .prazen
+  | .sestavljen x xs' => stakni (obrni xs') (Vektor.sestavljen x .prazen)
+
 
 def glava : sorry :=
   sorry
@@ -107,10 +130,12 @@ def elementi' : {A : Type} → Drevo A → List A :=
     | .sestavljeno l x d => aux l (x :: aux d acc)
   fun t => aux t []
 
+------------ od tle naprej je dn
 theorem zrcali_zrcali :
   {A : Type} → (t : Drevo A) →
   zrcali (zrcali t) = t := by
   sorry
+
 
 theorem visina_zrcali :
   {A : Type} → (t : Drevo A) →

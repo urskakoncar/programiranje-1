@@ -90,20 +90,46 @@ theorem trd7 {A : Type} {xs : List A} : reverse (reverse xs) = xs :=
       exact ip
 
 def map {A B : Type} : (A → B) → List A → List B :=
-  sorry
+  fun f xs =>
+    match xs with
+    | [] => []
+    | x :: xs' => f x :: map f xs'
 
 theorem map_assoc {A B C : Type} {f : A → B} {g : B → C} {xs : List A} : map g (map f xs) = map (g ∘ f) xs :=
-  sorry
+  by
+    induction xs with
+    | nil =>
+      simp [map]
+    | cons x xs' ip =>
+      simp [map, ip]
+
 
 theorem map_id {A : Type} {xs : List A} : map id xs = xs :=
-  sorry
+  by
+    induction xs with
+    | nil =>
+      simp [map, map_assoc]
+    | cons x xs' ip =>
+      simp [map, ip]
+
 
 theorem map_concat {A B : Type} {f : A → B} {xs ys : List A} : map f (concat xs ys) = concat (map f xs) (map f ys) :=
-  sorry
+  by
+    induction xs with
+    | nil =>
+      simp [concat]
+    | cons x xs' ip =>
+      simp [concat, map, ip]
 
 
 theorem map_reverse {A B : Type} {f : A → B} {xs : List A} : map f (reverse xs) = reverse (map f xs) :=
-  sorry
+  by
+    induction xs with
+    | nil =>
+      simp [map, reverse]
+    | cons x xs' ip =>
+      simp [map, concat, reverse, map_concat]
+      rw [ip]
 
 
 -- DREVESA !!!!!!!!!!!! %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -114,19 +140,30 @@ inductive tree (A : Type) : Type where
 #check tree.rec
 
 def tree_map {A B : Type} : (A → B) → tree A → tree B :=
-  sorry
+  fun f drevo =>
+    match drevo with
+    | tree.empty => tree.empty
+    | tree.node x levi desni => tree.node (f x) (tree_map f levi) (tree_map f desni)
+
 
 theorem tree_map_empty {A B : Type} {f : A → B} : tree_map f tree.empty = tree.empty :=
-  sorry
+  by
+    simp [tree_map]
 
 theorem tree_map_comp {A B C : Type} {f : A → B} {g : B → C} {t : tree A} : tree_map g (tree_map f t) = tree_map (g ∘ f) t :=
-  sorry
+  by
+    induction t with
+    | empty =>
+      simp [tree_map]
+    | node x l d ipl ipr =>
+      simp [tree_map, ipl, ipr]
 
 def depth {A : Type} : tree A → Nat :=
   fun t =>
     match t with
     | tree.empty => 0
     | tree.node _ l r => 1 + Nat.max (depth l) (depth r)
+
 
 -- S tem se ne bomo ukvarjali
 theorem max_comm {a b : Nat} : Nat.max a b = Nat.max b a :=
@@ -149,7 +186,13 @@ theorem mirror_depth {A : Type} {t : tree A} : depth (mirror t) = depth t :=
       rw [max_comm]
 
 theorem mirror_mirror {A : Type} {t : tree A} : mirror (mirror t) = t :=
-  sorry
+  by
+    induction t with
+    | empty =>
+      simp [mirror]
+    | node x l d ihl ihd =>
+      simp [mirror, ihl, ihd]
+
 
 def collect {A : Type} : tree A → List A :=
   fun t =>
@@ -158,18 +201,43 @@ def collect {A : Type} : tree A → List A :=
     | tree.node x l r => concat (collect l) (concat [x]  (collect r))
 
 theorem trd8 {A : Type} {x : A} {xs ys : List A} : concat xs (x::ys) = concat (concat xs [x]) ys :=
-  sorry
+  by
+    induction xs with
+    | nil =>
+      simp [concat]
+    | cons x xs' ih =>
+      simp [concat]
+      rw [ih]
 
 
 theorem collect_mirror {A : Type} {t : tree A} : collect (mirror t) = reverse (collect t) :=
-  sorry
+  by
+    induction t with
+    | empty =>
+      simp [collect, reverse]
+    | node x l r ihl ihr =>
+      simp [mirror, collect, reverse]
+      rw [ihl, ihr]
+      simp [concat]
+      rw [trd5, trd8]
+      simp [reverse]
 
 
 def size {A : Type} : tree A → Nat :=
-  sorry
+  fun t =>
+    match t with
+    | tree.empty => 0
+    | tree.node _ l r => 1 + size l + size r
+
 
 theorem size_mirror {A : Type} {t : tree A} : size (mirror t) = size t :=
-  sorry
+  by
+    induction t with
+    | empty =>
+      simp [size]
+    | node x l r ihl ihr =>
+      simp [mirror, size, ihr, ihl]
+      simp [Nat.add_assoc, Nat.add_comm (size r) (size l)]
 
 
 --- Indukcija na pomožnih funkcijah z akumulatorjem
