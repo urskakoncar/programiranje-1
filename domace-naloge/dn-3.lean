@@ -101,6 +101,7 @@ def obrni : {A : Type} → {n : Nat} → Vektor A n → Vektor A n :=
   | .prazen => .prazen
   | .sestavljen x xs' => stakni (obrni xs') (Vektor.sestavljen x .prazen)
 
+
 def glava : {A : Type} → {n : Nat} → Vektor A (n + 1) → A :=
   fun xs =>
   match xs with
