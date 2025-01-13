@@ -119,7 +119,12 @@ let insert_sort sez =
  # test;;
  - : int array = [|0; 4; 2; 3; 1|]
 [*----------------------------------------------------------------------------*)
-
+let swap a i j =
+    let i_elt = Array.get a i in
+    let j_elt = Array.get a j in
+    Array.set a i j_elt;
+    Array.set a j i_elt
+    
 
 (*----------------------------------------------------------------------------*]
  Funkcija [index_min a lower upper] poišče indeks najmanjšega elementa tabele
@@ -128,17 +133,44 @@ let insert_sort sez =
  index_min [|0; 2; 9; 3; 6|] 2 4 = 4
 [*----------------------------------------------------------------------------*)
 
+let index_min a lower upper = 
+    let nov_arr = [||] in
+    for i = lower to upper do
+        Array.set nov_arr a.(i) (i - lower)
+    done
+    Array.sort nov_arr 
+    (*neki neki idk*)
+
+    let index_min a lower upper = 
+        let min_elt = ref a.(lower) in
+        let indeks = ref lower in
+        for i = lower to upper do
+            if a.(i) < !min_elt then (
+              min_elt := a.(i);
+              indeks := i)
+            else ()
+        done;
+        !indeks
+
 
 (*----------------------------------------------------------------------------*]
  Funkcija [selection_sort_array] implementira urejanje z izbiranjem na mestu. 
 [*----------------------------------------------------------------------------*)
-
+let selection_sort_array arr =
+    let dolzina = Array.length arr in
+    if dolzina = 0 then arr 
+    else
+      (for i = 0 to dolzina - 1 do
+          swap arr i (index_min arr i (dolzina - 1))
+      done;
+      arr)
 
 (*----------------------------------------------------------------------------*]
  Funkcija [min_and_rest list] vrne par [Some (z, list')] tako da je [z]
  najmanjši element v [list] in seznam [list'] enak [list] z odstranjeno prvo
  pojavitvijo elementa [z]. V primeru praznega seznama vrne [None]. 
 [*----------------------------------------------------------------------------*)
+
 
 (*----------------------------------------------------------------------------*]
  Funkcija [selection_sort] je implementacija zgoraj opisanega algoritma.

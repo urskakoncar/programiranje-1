@@ -50,7 +50,7 @@ example : (r → ∀ x, p x) ↔ (∀ x, r → p x) := by
 example : r ∧ (∃ x, p x) ↔ (∃ x, r ∧ p x) := by
   apply Iff.intro
   intro h
-  cases h with h1 h2----????????
+  c
 
 
 example : r ∨ (∀ x, p x) → (∀ x, r ∨ p x) :=
